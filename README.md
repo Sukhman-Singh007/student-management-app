@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Student Management Web Application
 
 **Developed by Sukhman Singh**
@@ -78,3 +79,7 @@ pytest -v
 The application genuinely implements FastAPI, PostgreSQL, REST APIs, structured error handling, validation, transactions, rollback behavior, and automated integration-style API tests.
 
 Do not claim a specific performance improvement such as “40% faster” until you have measured a baseline and compared it with this implementation. Likewise, phrase reliability claims around the tests actually performed rather than claiming production outcomes that were not measured.
+=======
+# student-management-app
+Full-stack student management application built with FastAPI, PostgreSQL, JavaScript, and REST APIs.
+>>>>>>> 5ef46121bd0075e8649002097779c893d4c1c409
