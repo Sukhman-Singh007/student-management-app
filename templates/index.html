@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Student Management | Sukhman Singh</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <div>
+    <p class="eyebrow">SUKHMAN SINGH · STUDENT MANAGEMENT</p>
+    <h1>Academic Records Dashboard</h1>
+    <p class="sub">Manage student profiles, academic standing, and enrollment records.</p>
+  </div>
+  <button class="primary" id="newStudentBtn">+ Add Student</button>
+</header>
+
+<main>
+  <section class="stats">
+    <article><span>Total Students</span><strong id="totalStudents">0</strong></article>
+    <article><span>Active Students</span><strong id="activeStudents">0</strong></article>
+    <article><span>Average GPA</span><strong id="averageGpa">0.00</strong></article>
+    <article><span>Majors</span><strong id="majorCount">0</strong></article>
+  </section>
+
+  <section class="panel">
+    <div class="toolbar">
+      <div>
+        <h2>Student Records</h2>
+        <p>Search and manage academic profiles.</p>
+      </div>
+      <div class="filters">
+        <input id="searchInput" placeholder="Search name, email, ID...">
+        <select id="statusFilter">
+          <option value="">All statuses</option>
+          <option>Active</option><option>Inactive</option><option>Graduated</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="notice"></div>
+    <div class="tableWrap">
+      <table>
+        <thead><tr><th>Student</th><th>ID</th><th>Major</th><th>GPA</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody id="studentRows"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="emptyState">No students found. Add your first student record.</div>
+  </section>
+</main>
+
+<div class="modal hidden" id="studentModal">
+  <div class="modalCard">
+    <div class="modalHead"><div><h2 id="modalTitle">Add Student</h2><p>Enter the student's academic information.</p></div><button class="icon" id="closeModal">×</button></div>
+    <form id="studentForm">
+      <input type="hidden" id="studentId">
+      <div class="grid2">
+        <label>First Name<input id="firstName" required maxlength="60"></label>
+        <label>Last Name<input id="lastName" required maxlength="60"></label>
+      </div>
+      <label>Student ID<input id="studentNumber" required maxlength="20" placeholder="UNT10001"></label>
+      <label>Email<input id="email" type="email" required placeholder="student@example.edu"></label>
+      <label>Major<input id="major" required value="Computer Science"></label>
+      <div class="grid2">
+        <label>GPA<input id="gpa" type="number" min="0" max="4" step="0.01" required value="3.50"></label>
+        <label>Status<select id="status"><option>Active</option><option>Inactive</option><option>Graduated</option></select></label>
+      </div>
+      <div class="formActions"><button type="button" class="secondary" id="cancelBtn">Cancel</button><button class="primary" type="submit">Save Student</button></div>
+    </form>
+  </div>
+</div>
+
+<footer>Built by Sukhman Singh · Python · FastAPI · PostgreSQL · JavaScript</footer>
+<script src="/static/script.js"></script>
+</body>
+</html>
