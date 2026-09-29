@@ -83,3 +83,7 @@ Do not claim a specific performance improvement such as “40% faster” until y
 # student-management-app
 Full-stack student management application built with FastAPI, PostgreSQL, JavaScript, and REST APIs.
 >>>>>>> 5ef46121bd0075e8649002097779c893d4c1c409
+
+## Application Preview
+
+![Student Management Dashboard](screenshots/dashboard.png)
