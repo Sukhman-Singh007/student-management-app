@@ -1,9 +1,12 @@
-<<<<<<< HEAD
 # Student Management Web Application
 
 **Developed by Sukhman Singh**
 
 A full-stack academic record management application built with Python, FastAPI, PostgreSQL, SQLAlchemy, JavaScript, HTML/CSS, and Git.
+
+## Application Preview
+
+![Student Management Dashboard](screenshots/dashboard.png)
 
 ## Features
 - Create, read, update, and delete student records
@@ -42,7 +45,7 @@ cp .env.example .env
 ```
 Export your connection string before starting:
 ```bash
-export DATABASE_URL="postgresql+psycopg://postgres:YOUR_PASSWORD@localhost:5432/student_management"
+export DATABASE_URL=<redacted>
 ```
 
 ### 5. Add sample records
@@ -79,11 +82,3 @@ pytest -v
 The application genuinely implements FastAPI, PostgreSQL, REST APIs, structured error handling, validation, transactions, rollback behavior, and automated integration-style API tests.
 
 Do not claim a specific performance improvement such as “40% faster” until you have measured a baseline and compared it with this implementation. Likewise, phrase reliability claims around the tests actually performed rather than claiming production outcomes that were not measured.
-=======
-# student-management-app
-Full-stack student management application built with FastAPI, PostgreSQL, JavaScript, and REST APIs.
->>>>>>> 5ef46121bd0075e8649002097779c893d4c1c409
-
-## Application Preview
-
-![Student Management Dashboard](screenshots/dashboard.png)
