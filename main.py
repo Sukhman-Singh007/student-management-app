@@ -47,13 +47,20 @@ def list_students(
 ):
     query = db.query(Student)
     if search:
-        pattern = f"%{search}%"
+        # Escape LIKE wildcards in the user's text, or a search for
+        # "%" would match every student and "_" any single character.
+        escaped = (
+            search.replace("\\", "\\\\")
+            .replace("%", "\\%")
+            .replace("_", "\\_")
+        )
+        pattern = f"%{escaped}%"
         query = query.filter(
             or_(
-                Student.first_name.ilike(pattern),
-                Student.last_name.ilike(pattern),
-                Student.email.ilike(pattern),
-                Student.student_number.ilike(pattern),
+                Student.first_name.ilike(pattern, escape="\\"),
+                Student.last_name.ilike(pattern, escape="\\"),
+                Student.email.ilike(pattern, escape="\\"),
+                Student.student_number.ilike(pattern, escape="\\"),
             )
         )
     if major:

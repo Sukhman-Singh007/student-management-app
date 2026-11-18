@@ -41,3 +41,22 @@ def test_validation():
         "email":"not-an-email","major":"C","gpa":5.0,"status":"Unknown"
     }
     assert client.post("/api/students", json=bad).status_code == 422
+
+def test_search_treats_wildcards_literally():
+    payload = {
+        "student_number":"TEST002","first_name":"Ann","last_name":"Lee",
+        "email":"ann.lee@example.edu","major":"Computer Science","gpa":3.5,"status":"Active"
+    }
+    created = client.post("/api/students", json=payload)
+    assert created.status_code == 201
+    sid = created.json()["id"]
+    try:
+        # "%" and "_" are LIKE wildcards — searching for them must
+        # not match every student in the table.
+        assert client.get("/api/students", params={"search": "%"}).json() == []
+        assert client.get("/api/students", params={"search": "_"}).json() == []
+        # A plain substring still finds the student.
+        found = client.get("/api/students", params={"search": "ann.lee"}).json()
+        assert any(s["student_number"] == "TEST002" for s in found)
+    finally:
+        client.delete(f"/api/students/{sid}")
