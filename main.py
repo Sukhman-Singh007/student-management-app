@@ -43,6 +43,8 @@ def list_students(
     search: str | None = Query(default=None, max_length=100),
     major: str | None = Query(default=None, max_length=100),
     status: str | None = Query(default=None, max_length=30),
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
 ):
     query = db.query(Student)
@@ -67,7 +69,7 @@ def list_students(
         query = query.filter(Student.major == major)
     if status:
         query = query.filter(Student.status == status)
-    return query.order_by(Student.id.desc()).all()
+    return query.order_by(Student.id.desc()).offset(offset).limit(limit).all()
 
 @app.get("/api/students/{student_id}", response_model=StudentOut)
 def get_student(student_id: int, db: Session = Depends(get_db)):

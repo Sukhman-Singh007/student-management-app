@@ -60,3 +60,32 @@ def test_search_treats_wildcards_literally():
         assert any(s["student_number"] == "TEST002" for s in found)
     finally:
         client.delete(f"/api/students/{sid}")
+
+def test_list_pagination():
+    created_ids = []
+    for i, number in enumerate(("TEST010", "TEST011", "TEST012")):
+        resp = client.post("/api/students", json={
+            "student_number": number, "first_name": "Page",
+            "last_name": f"Test{i}",
+            "email": f"page.test{i}@example.edu",
+            "major": "Computer Science", "gpa": 3.0, "status": "Active",
+        })
+        assert resp.status_code == 201
+        created_ids.append(resp.json()["id"])
+    try:
+        # The three new students are the newest, so the first two
+        # pages (limit 2) cover all three without overlap.
+        page1 = client.get("/api/students", params={"limit": 2, "offset": 0}).json()
+        page2 = client.get("/api/students", params={"limit": 2, "offset": 2}).json()
+        assert len(page1) == 2
+        ids1 = {s["id"] for s in page1}
+        ids2 = {s["id"] for s in page2}
+        assert not ids1 & ids2
+        assert set(created_ids) <= ids1 | ids2
+        # Out-of-range values are rejected.
+        assert client.get("/api/students", params={"limit": 0}).status_code == 422
+        assert client.get("/api/students", params={"limit": 101}).status_code == 422
+        assert client.get("/api/students", params={"offset": -1}).status_code == 422
+    finally:
+        for sid in created_ids:
+            client.delete(f"/api/students/{sid}")
