@@ -66,9 +66,11 @@ def list_students(
             )
         )
     if major:
-        query = query.filter(Student.major == major)
+        # Match case-insensitively: filtering by "computer science"
+        # should find students stored as "Computer Science".
+        query = query.filter(func.lower(Student.major) == major.lower())
     if status:
-        query = query.filter(Student.status == status)
+        query = query.filter(func.lower(Student.status) == status.lower())
     return query.order_by(Student.id.desc()).offset(offset).limit(limit).all()
 
 @app.get("/api/students/{student_id}", response_model=StudentOut)

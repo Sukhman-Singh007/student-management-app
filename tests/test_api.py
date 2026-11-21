@@ -87,6 +87,25 @@ def test_duplicate_email_is_case_insensitive():
     finally:
         client.delete(f"/api/students/{sid}")
 
+def test_major_and_status_filters_are_case_insensitive():
+    payload = {
+        "student_number":"TEST030","first_name":"Filter","last_name":"Test",
+        "email":"filter.test@example.edu","major":"Computer Science","gpa":3.5,"status":"Active"
+    }
+    created = client.post("/api/students", json=payload)
+    assert created.status_code == 201
+    sid = created.json()["id"]
+    try:
+        # Lowercase filter values must match the stored casing.
+        found = client.get("/api/students", params={"major": "computer science"}).json()
+        assert any(s["student_number"] == "TEST030" for s in found)
+        found = client.get("/api/students", params={"status": "active"}).json()
+        assert any(s["student_number"] == "TEST030" for s in found)
+        # A filter that matches nothing still returns nothing.
+        assert client.get("/api/students", params={"major": "Biology"}).json() == []
+    finally:
+        client.delete(f"/api/students/{sid}")
+
 def test_list_pagination():
     created_ids = []
     for i, number in enumerate(("TEST010", "TEST011", "TEST012")):
