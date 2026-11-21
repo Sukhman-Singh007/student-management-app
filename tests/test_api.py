@@ -61,6 +61,32 @@ def test_search_treats_wildcards_literally():
     finally:
         client.delete(f"/api/students/{sid}")
 
+def test_duplicate_email_is_case_insensitive():
+    payload = {
+        "student_number":"TEST020","first_name":"Case","last_name":"Test",
+        "email":"Case.Test@example.edu","major":"Computer Science","gpa":3.5,"status":"Active"
+    }
+    created = client.post("/api/students", json=payload)
+    assert created.status_code == 201
+    sid = created.json()["id"]
+    try:
+        # Same mailbox, different casing — must be rejected as a duplicate.
+        twin = dict(payload, student_number="TEST021", email="case.test@example.edu")
+        assert client.post("/api/students", json=twin).status_code == 409
+        # Updating another student to that email (any casing) is one too.
+        other = dict(payload, student_number="TEST022", email="other@example.edu")
+        other_created = client.post("/api/students", json=other)
+        assert other_created.status_code == 201
+        other_id = other_created.json()["id"]
+        try:
+            resp = client.put(f"/api/students/{other_id}",
+                               json={"email": "CASE.TEST@EXAMPLE.EDU"})
+            assert resp.status_code == 409
+        finally:
+            client.delete(f"/api/students/{other_id}")
+    finally:
+        client.delete(f"/api/students/{sid}")
+
 def test_list_pagination():
     created_ids = []
     for i, number in enumerate(("TEST010", "TEST011", "TEST012")):
