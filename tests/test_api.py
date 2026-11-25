@@ -186,6 +186,34 @@ def test_whitespace_is_trimmed_on_create_and_filter():
     finally:
         client.delete(f"/api/students/{sid}")
 
+def test_duplicate_student_number_is_case_insensitive():
+    # "TEST070" and "test070" are the same student number — the
+    # duplicate check used to compare numbers case-sensitively, so
+    # both could be created (same class as the email fix).
+    payload = {
+        "student_number":"TEST070","first_name":"Number","last_name":"Test",
+        "email":"number.test@example.edu","major":"Computer Science","gpa":3.5,"status":"Active"
+    }
+    created = client.post("/api/students", json=payload)
+    assert created.status_code == 201
+    sid = created.json()["id"]
+    try:
+        twin = dict(payload, student_number="test070", email="other@example.edu")
+        assert client.post("/api/students", json=twin).status_code == 409
+        # Updating another student to that number (any casing) is one too.
+        other = dict(payload, student_number="TEST071", email="other2@example.edu")
+        other_created = client.post("/api/students", json=other)
+        assert other_created.status_code == 201
+        other_id = other_created.json()["id"]
+        try:
+            resp = client.put(f"/api/students/{other_id}",
+                              json={"student_number": "test070"})
+            assert resp.status_code == 409
+        finally:
+            client.delete(f"/api/students/{other_id}")
+    finally:
+        client.delete(f"/api/students/{sid}")
+
 def test_list_pagination():
     created_ids = []
     for i, number in enumerate(("TEST010", "TEST011", "TEST012")):

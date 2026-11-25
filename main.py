@@ -87,12 +87,14 @@ def get_student(student_id: int, db: Session = Depends(get_db)):
 
 @app.post("/api/students", response_model=StudentOut, status_code=201)
 def create_student(payload: StudentCreate, db: Session = Depends(get_db)):
-    # Email comparison is case-insensitive: "Alice@unt.edu" and
-    # "alice@unt.edu" are the same mailbox, so the second create
-    # must be rejected instead of silently making a duplicate.
+    # Email and student-number comparisons are case-insensitive:
+    # "Alice@unt.edu" and "alice@unt.edu" are the same mailbox, and
+    # "UNT10001" and "unt10001" are the same student number, so the
+    # second create must be rejected instead of silently making a
+    # duplicate.
     duplicate = db.query(Student).filter(
         or_(func.lower(Student.email) == payload.email.lower(),
-            Student.student_number == payload.student_number)
+            func.lower(Student.student_number) == payload.student_number.lower())
     ).first()
     if duplicate:
         raise HTTPException(status_code=409, detail="Email or student number already exists")
@@ -119,7 +121,7 @@ def update_student(student_id: int, payload: StudentUpdate, db: Session = Depend
         duplicate = db.query(Student).filter(
             Student.id != student_id,
             or_(func.lower(Student.email) == email.lower(),
-                Student.student_number == number),
+                func.lower(Student.student_number) == number.lower()),
         ).first()
         if duplicate:
             raise HTTPException(status_code=409, detail="Email or student number already exists")
