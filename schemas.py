@@ -14,13 +14,19 @@ class StudentCreate(StudentBase):
     pass
 
 class StudentUpdate(BaseModel):
-    student_number: str | None = Field(default=None, min_length=3, max_length=20)
-    first_name: str | None = Field(default=None, min_length=1, max_length=60)
-    last_name: str | None = Field(default=None, min_length=1, max_length=60)
-    email: EmailStr | None = None
-    major: str | None = Field(default=None, min_length=2, max_length=100)
-    gpa: float | None = Field(default=None, ge=0.0, le=4.0)
-    status: str | None = Field(default=None, pattern="^(Active|Inactive|Graduated)$")
+    # Fields are typed WITHOUT "| None" on purpose: an explicit null
+    # in a partial update used to slip through (exclude_unset keeps
+    # it) and crash the endpoint with a 500 — None was assigned to a
+    # NOT NULL column, or .lower() was called on it. With the plain
+    # type, a provided null fails validation with a 422 instead, while
+    # an omitted field still defaults to None and is excluded.
+    student_number: str = Field(default=None, min_length=3, max_length=20)
+    first_name: str = Field(default=None, min_length=1, max_length=60)
+    last_name: str = Field(default=None, min_length=1, max_length=60)
+    email: EmailStr = Field(default=None)
+    major: str = Field(default=None, min_length=2, max_length=100)
+    gpa: float = Field(default=None, ge=0.0, le=4.0)
+    status: str = Field(default=None, pattern="^(Active|Inactive|Graduated)$")
 
 class StudentOut(StudentBase):
     id: int

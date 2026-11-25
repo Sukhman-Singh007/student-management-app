@@ -106,6 +106,31 @@ def test_major_and_status_filters_are_case_insensitive():
     finally:
         client.delete(f"/api/students/{sid}")
 
+def test_update_rejects_explicit_nulls():
+    # An explicit null in a partial update used to reach the database
+    # and crash the endpoint with a 500 (None assigned to a NOT NULL
+    # column, or .lower() called on None in the duplicate check).
+    # Nulls are not valid values for any field, so they must be
+    # rejected with a 422 like any other invalid input.
+    payload = {
+        "student_number":"TEST040","first_name":"Null","last_name":"Test",
+        "email":"null.test@example.edu","major":"Computer Science","gpa":3.5,"status":"Active"
+    }
+    created = client.post("/api/students", json=payload)
+    assert created.status_code == 201
+    sid = created.json()["id"]
+    try:
+        for bad in ({"gpa": None}, {"email": None}, {"status": None},
+                    {"major": None}, {"student_number": None},
+                    {"first_name": None}, {"last_name": None}):
+            assert client.put(f"/api/students/{sid}", json=bad).status_code == 422
+        # A valid partial update still works after the change.
+        updated = client.put(f"/api/students/{sid}", json={"gpa": 3.9})
+        assert updated.status_code == 200
+        assert updated.json()["gpa"] == 3.9
+    finally:
+        client.delete(f"/api/students/{sid}")
+
 def test_list_pagination():
     created_ids = []
     for i, number in enumerate(("TEST010", "TEST011", "TEST012")):
