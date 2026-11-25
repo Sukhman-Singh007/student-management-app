@@ -47,6 +47,11 @@ def list_students(
     offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
 ):
+    # Trim filter values the same way stored values are trimmed, or
+    # a filter typed with surrounding spaces would match nothing.
+    search = search.strip() if search else None
+    major = major.strip() if major else None
+    status = status.strip() if status else None
     query = db.query(Student)
     if search:
         # Escape LIKE wildcards in the user's text, or a search for

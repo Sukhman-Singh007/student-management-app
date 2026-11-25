@@ -160,6 +160,32 @@ def test_majors_list_and_stats_group_by_case():
         for sid in created_ids:
             client.delete(f"/api/students/{sid}")
 
+def test_whitespace_is_trimmed_on_create_and_filter():
+    # A major typed with leading/trailing spaces used to be stored
+    # padded ("  Data Science  "), so the major filter — which
+    # compares the exact string — could never find that student.
+    payload = {
+        "student_number":"  TEST060  ","first_name":"  Padded  ","last_name":"Test",
+        "email":"padded.test@example.edu","major":"  Data Science  ","gpa":3.5,"status":"Active"
+    }
+    created = client.post("/api/students", json=payload)
+    assert created.status_code == 201
+    sid = created.json()["id"]
+    try:
+        assert created.json()["student_number"] == "TEST060"
+        assert created.json()["first_name"] == "Padded"
+        assert created.json()["major"] == "Data Science"
+        # The filter finds it with a plain value and with a padded one.
+        for value in ("data science", "  DATA SCIENCE  "):
+            found = client.get("/api/students", params={"major": value}).json()
+            assert any(s["student_number"] == "TEST060" for s in found)
+        # An update trims too.
+        updated = client.put(f"/api/students/{sid}", json={"major": "  Biology  "})
+        assert updated.status_code == 200
+        assert updated.json()["major"] == "Biology"
+    finally:
+        client.delete(f"/api/students/{sid}")
+
 def test_list_pagination():
     created_ids = []
     for i, number in enumerate(("TEST010", "TEST011", "TEST012")):
