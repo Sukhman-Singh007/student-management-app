@@ -148,7 +148,10 @@ def stats(db: Session = Depends(get_db)):
     total = db.query(func.count(Student.id)).scalar() or 0
     active = db.query(func.count(Student.id)).filter(Student.status == "Active").scalar() or 0
     avg_gpa = db.query(func.avg(Student.gpa)).scalar()
-    majors = db.query(func.count(func.distinct(Student.major))).scalar() or 0
+    # Majors are counted case-insensitively: "Computer Science" and
+    # "computer science" are one major, just as the list filter
+    # already treats them as one.
+    majors = db.query(func.count(func.distinct(func.lower(Student.major)))).scalar() or 0
     return {
         "total_students": total,
         "active_students": active,
@@ -158,7 +161,15 @@ def stats(db: Session = Depends(get_db)):
 
 @app.get("/api/majors")
 def majors(db: Session = Depends(get_db)):
-    rows = db.query(Student.major).distinct().order_by(Student.major).all()
+    # Group case-insensitively: "Computer Science" and
+    # "computer science" are the same major, so list it once
+    # (under its alphabetically-first stored spelling).
+    rows = (
+        db.query(func.min(Student.major))
+        .group_by(func.lower(Student.major))
+        .order_by(func.lower(Student.major))
+        .all()
+    )
     return [row[0] for row in rows]
 
 @app.get("/api/benchmark")

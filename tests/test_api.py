@@ -131,6 +131,35 @@ def test_update_rejects_explicit_nulls():
     finally:
         client.delete(f"/api/students/{sid}")
 
+def test_majors_list_and_stats_group_by_case():
+    # "Computer Science", "computer science" and "COMPUTER SCIENCE"
+    # are one major: /api/majors used to list all three spellings
+    # and /api/stats counted three majors for them.
+    before = [m for m in client.get("/api/majors").json()
+              if m.lower() == "computer science"]
+    before_count = client.get("/api/stats").json()["majors"]
+    created_ids = []
+    for i, (number, major) in enumerate((
+        ("TEST050", "Computer Science"),
+        ("TEST051", "computer science"),
+        ("TEST052", "COMPUTER SCIENCE"),
+    )):
+        resp = client.post("/api/students", json={
+            "student_number": number, "first_name": "Major",
+            "last_name": f"Test{i}", "email": f"major.test{i}@example.edu",
+            "major": major, "gpa": 3.0, "status": "Active",
+        })
+        assert resp.status_code == 201
+        created_ids.append(resp.json()["id"])
+    try:
+        after = [m for m in client.get("/api/majors").json()
+                 if m.lower() == "computer science"]
+        assert len(after) == len(before) + 1
+        assert client.get("/api/stats").json()["majors"] == before_count + 1
+    finally:
+        for sid in created_ids:
+            client.delete(f"/api/students/{sid}")
+
 def test_list_pagination():
     created_ids = []
     for i, number in enumerate(("TEST010", "TEST011", "TEST012")):
