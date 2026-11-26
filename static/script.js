@@ -1,5 +1,11 @@
 const $ = id => document.getElementById(id);
 let searchTimer;
+// The list endpoint caps a page at 50 rows (default limit 50, max
+// 100), but the dashboard used to fetch one page only — with more
+// than 50 students the rest were unreachable from the UI. Track the
+// page here and ask for the next slice explicitly.
+let page = 0;
+const PAGE_SIZE = 50;
 
 async function api(url, options = {}) {
   const response = await fetch(url, {
@@ -34,8 +40,17 @@ async function loadStudents() {
   const params = new URLSearchParams();
   if ($("searchInput").value.trim()) params.set("search", $("searchInput").value.trim());
   if ($("statusFilter").value) params.set("status", $("statusFilter").value);
+  params.set("limit", PAGE_SIZE);
+  params.set("offset", page * PAGE_SIZE);
   try {
     const students = await api("/api/students?" + params.toString());
+    // Deleting the last student on a page must not strand the user
+    // on an empty page when earlier pages still have rows.
+    if (!students.length && page > 0) {
+      page -= 1;
+      await loadStudents();
+      return;
+    }
     $("studentRows").innerHTML = students.map(s => `
       <tr>
         <td><div class="studentName">${esc(s.first_name)} ${esc(s.last_name)}</div><div class="email">${esc(s.email)}</div></td>
@@ -44,6 +59,10 @@ async function loadStudents() {
         <td><div class="actions"><button onclick="editStudent(${s.id})">Edit</button><button class="danger" onclick="deleteStudent(${s.id})">Delete</button></div></td>
       </tr>`).join("");
     $("emptyState").style.display = students.length ? "none" : "block";
+    // A full page may have a next one; a short page is the last.
+    $("prevPage").disabled = page === 0;
+    $("nextPage").disabled = students.length < PAGE_SIZE;
+    $("pageInfo").textContent = students.length ? `Page ${page + 1}` : "";
   } catch(e) { notice(e.message, true); }
 }
 
@@ -97,7 +116,9 @@ $("studentForm").addEventListener("submit", async e => {
 $("newStudentBtn").onclick=()=>openModal();
 $("closeModal").onclick=closeModal;
 $("cancelBtn").onclick=closeModal;
-$("statusFilter").onchange=loadStudents;
-$("searchInput").oninput=()=>{clearTimeout(searchTimer);searchTimer=setTimeout(loadStudents,250)};
+$("statusFilter").onchange=()=>{page=0;loadStudents();};
+$("searchInput").oninput=()=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>{page=0;loadStudents();},250)};
+$("prevPage").onclick=()=>{if(page>0){page-=1;loadStudents();}};
+$("nextPage").onclick=()=>{if(!$("nextPage").disabled){page+=1;loadStudents();}};
 $("studentModal").addEventListener("click", e=>{if(e.target===$("studentModal"))closeModal()});
 Promise.all([loadStudents(), loadStats()]);
