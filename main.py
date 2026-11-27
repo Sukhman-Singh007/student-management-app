@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, func
+from sqlalchemy.exc import IntegrityError
 
 from database import Base, engine, get_db
 from models import Student
@@ -104,6 +105,13 @@ def create_student(payload: StudentCreate, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(student)
         return student
+    except IntegrityError:
+        # Two creates with the same email or student number can pass
+        # the duplicate check together; the database unique constraint
+        # is the backstop, so a failed insert is a duplicate (409),
+        # not a server error.
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Email or student number already exists")
     except Exception:
         db.rollback()
         raise HTTPException(status_code=500, detail="Unable to save student record")
@@ -133,6 +141,12 @@ def update_student(student_id: int, payload: StudentUpdate, db: Session = Depend
         db.commit()
         db.refresh(student)
         return student
+    except IntegrityError:
+        # Same race as create: two updates racing to the same email
+        # or student number — the loser hits the unique constraint
+        # and is a duplicate (409), not a server error.
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Email or student number already exists")
     except Exception:
         db.rollback()
         raise HTTPException(status_code=500, detail="Unable to update student record")

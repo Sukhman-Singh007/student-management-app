@@ -160,6 +160,40 @@ def test_majors_list_and_stats_group_by_case():
         for sid in created_ids:
             client.delete(f"/api/students/{sid}")
 
+def test_concurrent_duplicate_create_returns_409_not_500():
+    # Two creates with the same email arriving at once used to slip
+    # past the duplicate pre-check together: the second insert hit
+    # the database unique constraint and the endpoint answered 500
+    # instead of 409. The unique constraint is the backstop, so a
+    # failed insert must be reported as a duplicate, not a crash.
+    import threading
+
+    payload = {
+        "student_number": "TEST080", "first_name": "Race",
+        "last_name": "Test", "email": "race.test@example.edu",
+        "major": "Computer Science", "gpa": 3.0, "status": "Active",
+    }
+    barrier = threading.Barrier(8)
+    statuses = []
+
+    def create():
+        barrier.wait()
+        statuses.append(client.post("/api/students", json=payload).status_code)
+
+    threads = [threading.Thread(target=create) for _ in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    try:
+        # Exactly one create wins; every other is a duplicate — and
+        # none of them is a 500.
+        assert statuses.count(201) == 1
+        assert all(s in (201, 409) for s in statuses)
+    finally:
+        for s in client.get("/api/students", params={"search": "race.test"}).json():
+            client.delete(f"/api/students/{s['id']}")
+
 def test_whitespace_is_trimmed_on_create_and_filter():
     # A major typed with leading/trailing spaces used to be stored
     # padded ("  Data Science  "), so the major filter — which
