@@ -40,10 +40,17 @@ async function loadStudents() {
   const params = new URLSearchParams();
   if ($("searchInput").value.trim()) params.set("search", $("searchInput").value.trim());
   if ($("statusFilter").value) params.set("status", $("statusFilter").value);
-  params.set("limit", PAGE_SIZE);
+  // Ask for one row more than a page holds: a full page of exactly
+  // PAGE_SIZE rows used to leave Next enabled even when there was no
+  // next page (e.g. exactly 50 students), and clicking it fetched an
+  // empty page and bounced straight back. The extra row is only a
+  // "there is more" signal — it is never shown.
+  params.set("limit", PAGE_SIZE + 1);
   params.set("offset", page * PAGE_SIZE);
   try {
-    const students = await api("/api/students?" + params.toString());
+    const fetched = await api("/api/students?" + params.toString());
+    const hasMore = fetched.length > PAGE_SIZE;
+    const students = fetched.slice(0, PAGE_SIZE);
     // Deleting the last student on a page must not strand the user
     // on an empty page when earlier pages still have rows.
     if (!students.length && page > 0) {
@@ -59,9 +66,10 @@ async function loadStudents() {
         <td><div class="actions"><button onclick="editStudent(${s.id})">Edit</button><button class="danger" onclick="deleteStudent(${s.id})">Delete</button></div></td>
       </tr>`).join("");
     $("emptyState").style.display = students.length ? "none" : "block";
-    // A full page may have a next one; a short page is the last.
+    // Next is enabled only when the over-fetch found a row past
+    // this page — a full page alone no longer implies there is more.
     $("prevPage").disabled = page === 0;
-    $("nextPage").disabled = students.length < PAGE_SIZE;
+    $("nextPage").disabled = !hasMore;
     $("pageInfo").textContent = students.length ? `Page ${page + 1}` : "";
   } catch(e) { notice(e.message, true); }
 }
